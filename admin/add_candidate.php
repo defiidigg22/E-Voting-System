@@ -1,0 +1,162 @@
+<?php
+session_start();
+require_once 'db_config.php'; // PDO
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: admin_login.php");
+    exit();
+}
+
+$admin_id = $_SESSION['admin_id'];
+// Get admin info
+$stmt_admin = $pdo->prepare("SELECT * FROM admins WHERE admin_id = ?");
+$stmt_admin->execute([$admin_id]);
+$admin = $stmt_admin->fetch();
+if (!$admin) {
+    session_destroy(); header("Location: admin_login.php?error=admin_details_missing"); exit();
+}
+$is_superadmin = $admin['is_superadmin'];
+
+// Get and validate election_id
+$election_id = isset($_GET['election_id']) ? intval($_GET['election_id']) : 0;
+$election_data = null;
+if ($election_id > 0) {
+     $sql_verify = "SELECT title FROM elections WHERE election_id = ?";
+     $params_verify = [$election_id];
+     if (!$is_superadmin) {
+        $sql_verify .= " AND created_by = ?";
+        $params_verify[] = $admin_id;
+     }
+    $stmt_verify = $pdo->prepare($sql_verify);
+    $stmt_verify->execute($params_verify);
+    $election_data = $stmt_verify->fetch();
+    if (!$election_data) {
+        $_SESSION['error_message'] = "Invalid or unauthorized election specified.";
+        header("Location: manage_elections.php");
+        exit();
+    }
+} else {
+     $_SESSION['error_message'] = "No election specified.";
+     header("Location: manage_candidates.php");
+     exit();
+}
+
+// Initialize form variables
+$errors = [];
+$name = '';
+$party = '';
+$bio = '';
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+    $party = trim($_POST['party']);
+    $bio = trim($_POST['bio']);
+    // --- TODO: Handle photo upload ---
+    $photo_url = null; // Placeholder - Implement file upload logic here
+
+    if (empty($name)) {
+        $errors[] = "Candidate name is required.";
+    }
+    // Add more validation as needed
+
+    if (empty($errors)) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO candidates (election_id, name, party, bio, photo_url) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$election_id, $name, $party, $bio, $photo_url]);
+
+            // Log action (optional)
+            /* ... logging code ... */
+
+            $_SESSION['success_message'] = "Candidate '" . htmlspecialchars($name) . "' added successfully!";
+            header("Location: manage_candidates.php?election_id=$election_id");
+            exit();
+        } catch (PDOException $e) {
+            $errors[] = "Database error: " . $e->getMessage();
+        }
+    }
+}
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Candidate - <?php echo htmlspecialchars($election_data['title']); ?></title>
+     <link rel="stylesheet" href="../css/admin.css">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+         <div class="sidebar">
+             <div class="sidebar-header"><h2>E-Voting System</h2><p>Admin Panel</p></div>
+             <ul class="sidebar-menu">
+                <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a></li>
+                <li><a href="manage_elections.php"><i class="fas fa-box-archive fa-fw"></i>Manage Elections</a></li>
+                <li><a href="manage_candidates.php" class="active"><i class="fas fa-users fa-fw"></i>Manage Candidates</a></li>
+                <li><a href="manage_voters.php"><i class="fas fa-user-check fa-fw"></i>Manage Voters</a></li>
+                <li><a href="reports.php"><i class="fas fa-chart-pie fa-fw"></i>Reports</a></li>
+                <?php if ($is_superadmin): ?>
+                    <li><a href="manage_admins.php"><i class="fas fa-user-shield fa-fw"></i>Manage Admins</a></li>
+                <?php endif; ?>
+                <li><a href="settings.php"><i class="fas fa-cog fa-fw"></i>Settings</a></li>
+                <li><a href="logout.php"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <div class="welcome-message">Add New Candidate</div>
+                <button class="logout-btn" onclick="location.href='logout.php'"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+
+             <?php if (!empty($errors)): ?>
+                <div class="alert alert-danger">
+                    <strong>Please fix the following errors:</strong>
+                    <ul>
+                        <?php foreach ($errors as $error): ?>
+                            <li><?php echo htmlspecialchars($error); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <div class="form-card">
+                 <div class="form-header">
+                     <h2><i class="fas fa-user-plus"></i>Candidate Details</h2>
+                     <div class="sub-title">For Election: <?php echo htmlspecialchars($election_data['title']); ?></div>
+                 </div>
+
+                <form method="POST" action="add_candidate.php?election_id=<?php echo $election_id; ?>" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name">Candidate Name</label>
+                        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="party">Party / Affiliation (Optional)</label>
+                        <input type="text" id="party" name="party" value="<?php echo htmlspecialchars($party); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="bio">Biography / Statement (Optional)</label>
+                        <textarea id="bio" name="bio"><?php echo htmlspecialchars($bio); ?></textarea>
+                    </div>
+                     <div class="form-group">
+                        <label for="photo">Photo (Optional)</label>
+                        <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/gif">
+                        <small>Upload a photo for the candidate (e.g., JPG, PNG). Max size: 2MB.</small>
+                        </div>
+
+                     <div class="form-actions">
+                        <button type="submit" class="btn"><i class="fas fa-plus"></i> Add Candidate</button>
+                        <a href="manage_candidates.php?election_id=<?php echo $election_id; ?>" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

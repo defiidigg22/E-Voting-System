@@ -34,9 +34,13 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        .vote-button {
+        .role-buttons {
+            margin-top: 30px;
+        }
+        .role-button {
             background-color: #ff00ff;
             padding: 15px 30px;
+            margin: 10px;
             border: none;
             border-radius: 5px;
             font-size: 20px;
@@ -45,12 +49,8 @@
             color: white;
             text-decoration: none;
         }
-        .vote-button:hover {
+        .role-button:hover {
             transform: scale(1.1);
-        }
-        .countdown {
-            font-size: 24px;
-            margin-top: 20px;
         }
         .footer {
             background: #222;
@@ -61,40 +61,20 @@
 </head>
 <body>
     <header>
-        E-Voting System | <a href="login.php" style="color: #fff; text-decoration: none;">Login/Register</a>
+        E-Voting System <a href="login.php" style="color: #fff; text-decoration: none;"></a>
     </header>
     
     <section class="hero">
         <h1>Secure, Transparent, and Fast E-Voting System</h1>
-        <a href="verify_pin.php" class="vote-button">Vote Now</a>
+        <div class="role-buttons">
+            <a href="index.php" class="role-button">Login as Voter</a>
+            <a href="admin/admin_login.php" class="role-button">Login as Admin</a>
+        </div>
     </section>
-    
-    <section class="countdown">
-        Election starts in: <span id="timer">Loading...</span>
-    </section>
-    
-    <script>
-        function countdown() {
-            let countDownDate = new Date("Dec 31, 2025 00:00:00").getTime();
-            let x = setInterval(function() {
-                let now = new Date().getTime();
-                let distance = countDownDate - now;
-                let days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                document.getElementById("timer").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
-                if (distance < 0) {
-                    clearInterval(x);
-                    document.getElementById("timer").innerHTML = "Voting Started!";
-                }
-            }, 1000);
-        }
-        countdown();
-    </script>
-    
+
     <footer class="footer">
         &copy; 2025 E-Voting System. All rights reserved.
     </footer>
 </body>
 </html>
+
