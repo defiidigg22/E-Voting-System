@@ -40,35 +40,3 @@ Frontend: HTML, CSS, JavaScript
 
 Server: Apache (typically used with XAMPP)
 
-How to Install and Run Locally
-To get this project up and running on your local machine, follow these steps.
-
-Prerequisites
-
-Make sure you have a local server environment like XAMPP or WAMP installed.
-
-Clone the Repository
-
-Bash
-
-git clone https://github.com/defiidigg22/E-Voting-System.git
-Move to your Server Directory
-
-Place the cloned project folder inside the htdocs directory of your XAMPP installation (C:\xampp\htdocs).
-
-Database Setup
-
-Open phpMyAdmin (http://localhost/phpmyadmin).
-
-Create a new database and name it voting_db.
-
-Import the provided .sql file (e.g., voting_db.sql) into the new database. This will create the necessary tables and data.
-
-Run the Application
-
-Open your web browser and navigate to http://localhost/E-Voting-System/ (or the name you gave the project folder).
-
-Usage
-Admin Access: Navigate to the admin login page (http://localhost/E-Voting-System/admin/) and use the admin credentials to manage the election.
-
-Voter Access: Voters can log in from the main page (http://localhost/E-Voting-System/) using the credentials provided by the administrator. Once logged in, they can cast their vote.
