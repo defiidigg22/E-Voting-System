@@ -1,0 +1,90 @@
+/* Neon/Dark Futuristic Theme for Voter Dashboard */
+body {
+    background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
+    color: #fff;
+    font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+}
+
+.neon-header {
+    background: linear-gradient(90deg, #232526 0%, #0f2027 100%);
+    box-shadow: 0 0 20px #00ffe7, 0 0 40px #00ffe7 inset;
+    color: #00ffe7;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-size: 2.2rem;
+    letter-spacing: 2px;
+    font-weight: bold;
+    border-bottom: 2px solid #00ffe7;
+}
+
+.neon-card {
+    background: rgba(20, 30, 48, 0.95);
+    border-radius: 18px;
+    box-shadow: 0 0 16px #00ffe7, 0 0 4px #00ffe7 inset;
+    padding: 2rem 2.5rem;
+    margin: 2rem auto;
+    max-width: 700px;
+    border: 1.5px solid #00ffe7;
+}
+
+.neon-btn {
+    background: linear-gradient(90deg, #00ffe7 0%, #00bfff 100%);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 0 10px #00ffe7, 0 0 2px #00ffe7 inset;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.neon-btn:hover {
+    background: linear-gradient(90deg, #00bfff 0%, #00ffe7 100%);
+    color: #fff;
+    box-shadow: 0 0 20px #00ffe7, 0 0 8px #00ffe7 inset;
+}
+
+.neon-sidebar {
+    background: rgba(15, 32, 39, 0.98);
+    border-right: 2px solid #00ffe7;
+    min-height: 100vh;
+    padding-top: 2rem;
+    box-shadow: 0 0 20px #00ffe7;
+}
+
+.neon-sidebar a {
+    color: #00ffe7;
+    display: block;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.neon-sidebar a.active, .neon-sidebar a:hover {
+    background: #00ffe7;
+    color: #111;
+    border-radius: 8px 0 0 8px;
+}
+
+@media (max-width: 900px) {
+    .neon-card { padding: 1rem; }
+    .neon-header { font-size: 1.3rem; padding: 1rem; }
+}
+
+@media (max-width: 600px) {
+    .neon-sidebar { display: none; }
+    .neon-card { margin: 1rem 0; }
+}
+
+.chart-container {
+    background: rgba(20, 30, 48, 0.85);
+    border-radius: 16px;
+    box-shadow: 0 0 12px #00ffe7, 0 0 2px #00ffe7 inset;
+    padding: 1.5rem;
+    margin: 2rem auto;
+    max-width: 600px;
+    border: 1px solid #00ffe7;
+}

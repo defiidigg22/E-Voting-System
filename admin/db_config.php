@@ -1,5 +1,6 @@
 <?php
 // Database configuration
+date_default_timezone_set('Asia/Kolkata');
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'evoting');
 define('DB_USER', 'root');
@@ -7,8 +8,8 @@ define('DB_PASS', '');
 
 // Create PDO instance
 try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = new PDO("mysql:host=" . DB_HOST . ";port=3306;dbname=" . DB_NAME, DB_USER, DB_PASS);   
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());

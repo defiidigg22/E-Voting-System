@@ -95,89 +95,208 @@ if (isset($_GET['election_id']) && is_numeric($_GET['election_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - E-Voting System</title>
-    <link rel="stylesheet" href="../css/admin.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+        }
+        .sidebar {
+            min-width: 240px;
+            max-width: 240px;
+            background: linear-gradient(160deg, #6366f1 0%, #60a5fa 100%);
+            color: #fff;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: all 0.3s;
+            z-index: 1030;
+        }
+        .sidebar.collapsed {
+            margin-left: -240px;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-header p {
+            font-size: 1rem;
+            color: #dbeafe;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            margin: 0.5rem 0;
+        }
+        .sidebar-menu a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 0.75rem 2rem;
+            border-left: 4px solid transparent;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .sidebar-menu a.active, .sidebar-menu a:hover {
+            background: rgba(255,255,255,0.08);
+            border-left: 4px solid #fff;
+        }
+        .main-content {
+            margin-left: 240px;
+            padding: 2rem 2vw 2rem 2vw;
+            transition: margin-left 0.3s;
+        }
+        .main-content.full {
+            margin-left: 0;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #6366f1;
+            font-size: 2rem;
+            margin-right: 1rem;
+            display: inline-block;
+        }
+        .section-card, .chart, .empty-state {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px 0 rgba(99,102,241,0.08);
+            padding: 2rem 2rem 1.5rem 2rem;
+            max-width: 900px;
+            margin: 0 auto 2rem auto;
+        }
+        .section-header h3, .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #6366f1;
+        }
+        .stats-grid {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .stat-card {
+            background: #f1f5f9;
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            flex: 1;
+            text-align: center;
+            color: #334155;
+        }
+        .alert {
+            max-width: 900px;
+            margin: 0 auto 1.5rem auto;
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar {
+                position: fixed;
+                z-index: 1040;
+            }
+            .stats-grid {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            document.querySelector('.main-content').classList.toggle('full');
+        }
+    </script>
 </head>
 <body>
-<div class="dashboard">
-        <div class="sidebar">
-             <div class="sidebar-header"><h2>E-Voting System</h2><p>Admin Panel</p></div>
-             <ul class="sidebar-menu">
-                <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a></li>
-                <li><a href="manage_elections.php"><i class="fas fa-box-archive fa-fw"></i>Manage Elections</a></li>
-                <li><a href="manage_candidates.php"><i class="fas fa-users fa-fw"></i>Manage Candidates</a></li>
-                <li><a href="manage_voters.php"><i class="fas fa-user-check fa-fw"></i>Manage Voters</a></li>
-                <li><a href="reports.php" class="active"><i class="fas fa-chart-pie fa-fw"></i>Reports</a></li>
-                <?php if ($admin['is_superadmin']): ?>
-                    <li><a href="manage_admins.php"><i class="fas fa-user-shield fa-fw"></i>Manage Admins</a></li>
-                <?php endif; ?>
-                <li><a href="settings.php"><i class="fas fa-cog fa-fw"></i>Settings</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
-            </ul>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>E-Voting System</h2>
+            <p>Admin Panel</p>
         </div>
-
-        <div class="main-content">
-            <div class="header">
-                <div class="welcome-message">Election Reports</div>
-                <button class="logout-btn" onclick="location.href='logout.php'"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            </div>
-
-            <?php if (isset($_SESSION['error_message'])): ?>
-                <div class="alert alert-danger"><?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
+        <ul class="sidebar-menu">
+            <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a></li>
+            <li><a href="manage_elections.php"><i class="fas fa-box-archive fa-fw"></i>Manage Elections</a></li>
+            <li><a href="manage_candidates.php"><i class="fas fa-users fa-fw"></i>Manage Candidates</a></li>
+            <li><a href="manage_voters.php"><i class="fas fa-user-check fa-fw"></i>Manage Voters</a></li>
+            <li><a href="reports.php" class="active"><i class="fas fa-chart-pie fa-fw"></i>Reports</a></li>
+            <?php if ($admin['is_superadmin']): ?>
+                <li><a href="manage_admins.php"><i class="fas fa-user-shield fa-fw"></i>Manage Admins</a></li>
             <?php endif; ?>
-
-            <div class="section-card">
-                 <div class="section-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-                     <h3 class="section-title" style="margin-bottom: 1rem;"><i class="fas fa-filter"></i>Select Election for Report</h3>
-                 </div>
-                <div class="election-selector">
-                    <form method="GET" action="reports.php" id="electionSelectForm">
-                        <label for="election_id">Select Election:</label>
-                        <select id="election_id" name="election_id" onchange="document.getElementById('electionSelectForm').submit();">
-                            <option value="">-- Select an election --</option>
-                            <?php foreach ($elections as $election): ?>
-                                <option value="<?php echo $election['election_id']; ?>"
-                                    <?php echo ($election_id == $election['election_id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($election['title']); ?> (<?php echo date('M j, Y', strtotime($election['start_datetime'])); ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <noscript><button type="submit" class="btn btn-secondary btn-sm" style="margin-left: 10px;">Load Report</button></noscript>
-                    </form>
-                </div>
+            <li><a href="settings.php"><i class="fas fa-cog fa-fw"></i>Settings</a></li>
+            <li><a href="logout.php"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <div class="welcome-message">Election Reports</div>
+            <button class="btn btn-outline-danger btn-sm" onclick="location.href='logout.php'"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger"><?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
+        <?php endif; ?>
+        <div class="section-card">
+            <div class="section-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <h3 class="section-title" style="margin-bottom: 1rem;"><i class="fas fa-filter"></i> Select Election for Report</h3>
             </div>
-
-            <?php if ($selected_election): ?>
-                 <div class="section-card">
-                     <div class="section-header">
-                         <h3 class="section-title"><i class="fas fa-poll"></i>Report for: <?php echo htmlspecialchars($selected_election['title']); ?></h3>
-                     </div>
-                    <p><strong>Period:</strong> <?php echo date('M j, Y H:i A', strtotime($selected_election['start_datetime'])); ?> to <?php echo date('M j, Y H:i A', strtotime($selected_election['end_datetime'])); ?></p>
-                    <p><strong>Status:</strong> <?php echo ucfirst(htmlspecialchars($selected_election['status'])); ?></p>
-
-                    <div class="stats-grid" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-                         <div class="stat-card">
-                            <h4>Candidates</h4>
-                            <p><?php echo $candidate_count ?? 0; ?></p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Votes Cast</h4>
-                            <p><?php echo $participation_stats['voted_count'] ?? 0; ?></p>
-                        </div>
+            <div class="election-selector">
+                <form method="GET" action="reports.php" id="electionSelectForm">
+                    <label for="election_id">Select Election:</label>
+                    <select class="form-select" id="election_id" name="election_id" onchange="document.getElementById('electionSelectForm').submit();">
+                        <option value="">-- Select an election --</option>
+                        <?php foreach ($elections as $election): ?>
+                            <option value="<?php echo $election['election_id']; ?>" <?php echo ($election_id == $election['election_id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($election['title']); ?> (<?php echo date('M j, Y', strtotime($election['start_datetime'])); ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <noscript><button type="submit" class="btn btn-secondary btn-sm" style="margin-left: 10px;">Load Report</button></noscript>
+                </form>
+            </div>
+        </div>
+        <?php if ($selected_election): ?>
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-poll"></i> Report for: <?php echo htmlspecialchars($selected_election['title']); ?></h3>
+                </div>
+                <p><strong>Period:</strong> <?php echo date('M j, Y H:i A', strtotime($selected_election['start_datetime'])); ?> to <?php echo date('M j, Y H:i A', strtotime($selected_election['end_datetime'])); ?></p>
+                <p><strong>Status:</strong> <?php echo ucfirst(htmlspecialchars($selected_election['status'])); ?></p>
+                <div class="stats-grid" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                    <div class="stat-card">
+                        <h4>Candidates</h4>
+                        <p><?php echo $candidate_count ?? 0; ?></p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Votes Cast</h4>
+                        <p><?php echo $participation_stats['voted_count'] ?? 0; ?></p>
                     </div>
                 </div>
-
-                <div class="chart-container">
-                    <?php if (!empty($vote_stats)): ?>
+            </div>
+            <div class="chart-container">
+                <?php if (!empty($vote_stats)): ?>
                     <div class="chart">
                         <h4 class="chart-title">Vote Distribution by Candidate</h4>
                         <canvas id="votesChart"></canvas>
                     </div>
-                    <?php else: ?>
-                     <div class="section-card empty-state" style="grid-column: 1 / -1;"><p>No vote data available to display charts.</p></div>
-                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="section-card empty-state" style="grid-column: 1 / -1;"><p>No vote data available to display charts.</p></div>
+                <?php endif; ?>
                     </div>
 
                 <?php if (!empty($vote_stats)): ?>

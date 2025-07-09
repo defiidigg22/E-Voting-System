@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 session_start();
 require_once 'db_config.php'; // PDO
 
@@ -24,8 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$username]);
             $admin = $stmt->fetch();
 
-            if ($admin && password_verify($password, $admin['password_hash'])) {
-                // Login successful
+            if ($admin && password_verify($password, $admin['password'])) {                // Login successful
                 $_SESSION['admin_id'] = $admin['admin_id'];
                 $_SESSION['username'] = $admin['username'];
                 $_SESSION['is_superadmin'] = $admin['is_superadmin'];
@@ -65,175 +66,150 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - E-Voting System</title>
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-         /* Base styles */
-        html, body {
-            height: 100%;
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-        }
         body {
-            /* --- Centering Fix --- */
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #f0abfc 100%);
             display: flex;
-            justify-content: center;
             align-items: center;
-            background-color: #f4f4f9; /* Light background for admin */
-            padding: 20px;
-            box-sizing: border-box;
+            justify-content: center;
         }
         .login-container {
-            background-color: white;
-            padding: 35px 40px;
-            border-radius: 10px; /* Slightly more rounded */
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            background: rgba(255,255,255,0.88);
+            box-shadow: 0 8px 32px 0 rgba(80, 80, 180, 0.18);
+            border-radius: 1.5rem;
+            border: none;
+            padding: 2.5rem 2rem;
+            margin: 2rem auto;
+            max-width: 420px;
             width: 100%;
-            max-width: 420px; /* Max width for the box */
             text-align: center;
-            box-sizing: border-box;
+            animation: fadeInDown 1s cubic-bezier(.23,1,.32,1);
+        }
+        @keyframes fadeInDown {
+            0% { opacity: 0; transform: translateY(-40px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         h2 {
-            color: #333;
+            color: #4b2994;
             margin-top: 0;
             margin-bottom: 25px;
-            font-size: 1.7em;
+            font-size: 2em;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
-
-        /* --- Message Styling (Moved Above Form) --- */
         .message-area {
             margin-bottom: 20px;
-            min-height: 40px; /* Reserve space */
+            min-height: 40px;
             text-align: center;
         }
         .message {
-            font-size: 0.9em;
-            padding: 10px 15px;
-            border-radius: 5px;
+            font-size: 1em;
+            padding: 12px 15px;
+            border-radius: 8px;
             border: 1px solid transparent;
             display: block;
             box-sizing: border-box;
             word-wrap: break-word;
         }
         .message.error {
-            color: #721c24; /* Darker red text */
-            background-color: #f8d7da; /* Light red background */
-            border-color: #f5c6cb; /* Red border */
+            color: #fff;
+            background: linear-gradient(90deg, #f472b6, #a78bfa);
+            border: none;
+            box-shadow: 0 2px 8px #f472b655;
         }
-        /* No success message needed on login page typically */
-
-        /* Form Group Styling */
         .form-group {
             margin-bottom: 18px;
-            position: relative; /* For icon positioning */
+            position: relative;
             text-align: left;
         }
-        .form-group label { /* Optional labels */
+        .form-group label {
             display: block;
             margin-bottom: 6px;
-            font-weight: bold;
-            color: #555;
-            font-size: 0.9em;
+            font-weight: 600;
+            color: #6366f1;
+            font-size: 0.97em;
         }
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 12px 15px; /* Standard padding */
-            border: 1px solid #ccc; /* Clearer border */
-            border-radius: 5px;
+            padding: 14px 15px;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
             font-size: 1rem;
             box-sizing: border-box;
-             /* --- Input Field Distinction --- */
-            background-color: #fff; /* White background */
-            color: #333; /* Dark text */
-            transition: border-color 0.3s;
+            background-color: #f8fafc;
+            color: #22223b;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         input:focus {
             outline: none;
-            border-color: #6600ff; /* Use primary color for focus */
-            box-shadow: 0 0 0 2px rgba(102, 0, 255, 0.2); /* Subtle focus ring */
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 0.2rem #a78bfa80, 0 2px 8px #a78bfa33;
         }
-         /* Specific padding for password input when icon is present */
         .password-input-wrapper input {
-             padding-right: 40px; /* Make space for the icon */
+            padding-right: 40px;
         }
-
-        /* Password Toggle Icon */
         .password-toggle-icon {
             position: absolute;
-            right: 12px;
-            /* Adjust top based on label presence */
-            top: 50%; /* If no label */
-            /* top: calc(50% + 13px); */ /* Approximate if using labels */
+            right: 15px;
+            top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #888; /* Grey icon */
+            color: #6366f1;
             font-size: 1.1em;
             z-index: 2;
+            transition: color 0.2s;
         }
-         .password-toggle-icon:hover {
-             color: #333;
-         }
-
-        /* Button Styling */
-        button {
+        .password-toggle-icon:hover {
+            color: #a78bfa;
+        }
+        button[type="submit"] {
             width: 100%;
-            padding: 12px;
-            background-color: #6600ff; /* Use primary color */
+            padding: 14px;
+            background: linear-gradient(90deg, #a78bfa, #6366f1);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: background-color 0.3s;
             font-weight: bold;
             margin-top: 10px;
+            box-shadow: 0 4px 16px #a78bfa33;
+            transition: background 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
         }
-        button:hover {
-            background-color: #4d00c2; /* Darker primary */
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #6366f1, #a78bfa);
+            box-shadow: 0 8px 32px #6366f144;
         }
 
     </style>
 </head>
 <body>
-    <div class="login-container">
+    <div class="login-container animate__animated animate__fadeInDown">
         <h2>Admin Login</h2>
-
         <div class="message-area">
              <?php if ($error): ?>
-                <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+                <div class="message error animate__animated animate__shakeX"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
         </div>
-
         <form method="POST" action="admin_login.php">
-            <div class="form-group">
+            <div class="form-group animate__animated animate__fadeInLeft animate__delay-1s">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required value="<?php echo htmlspecialchars($input_username); ?>">
             </div>
-            <div class="form-group password-input-wrapper">
+            <div class="form-group password-input-wrapper animate__animated animate__fadeInLeft animate__delay-2s">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" class="password-input" required>
                  <i class="fas fa-eye password-toggle-icon" onclick="togglePasswordVisibility('password')"></i>
             </div>
-            <button type="submit">Login</button>
-        </form>
-    </div>
-
-     <script>
-        function togglePasswordVisibility(inputId) {
-            const passwordInput = document.getElementById(inputId);
-            const icon = passwordInput.nextElementSibling; // Get the icon
-
-            if (passwordInput.type === "password") {
-                passwordInput.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-            } else {
-                passwordInput.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
-            }
-        }
-    </script>
-
-</body>
-</html>
+            <button type="submit" class="animate__animated animate__pulse animate__delay-3s">Login</button>
+        </form

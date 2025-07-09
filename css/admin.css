@@ -1,8 +1,7 @@
-/* ca2/css/admin.css */
 
-/* --- Variables --- */
 :root {
     --primary-color: #6600ff;
+    --secondary-color: #ff00ff; /* Not used much? */
     --dark-color: #0a0a0a;
     --light-color: #f4f4f9;
     --danger-color: #ff3333;
@@ -38,23 +37,26 @@ body {
     /* Define grid columns: fixed sidebar, auto content */
     grid-template-columns: var(--sidebar-width) 1fr;
     min-height: 100vh;
+    background-color: #06202B;
+
 }
 
 /* --- Sidebar --- */
 .sidebar {
-    background-color: var(--dark-color);
+    background-color: #06202B;
     color: white;
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    position: fixed; /* Keep sidebar fixed */
-    left: 0;
-    top: 0;
-    height: 100%;
+    /* Removed position:fixed for simplicity, ensure it works with grid */
+    /* position: fixed; */
+    /* left: 0; */
+    /* top: 0; */
+    height: 100vh; /* Full viewport height */
     width: var(--sidebar-width);
     overflow-y: auto; /* Allow scrolling if menu is long */
-    z-index: 100; /* Ensure sidebar is on top */
-    transition: transform 0.3s ease-in-out; /* For potential mobile toggle */
+    z-index: 100; /* Ensure sidebar is on top if needed */
+    box-sizing: border-box; /* Include padding in width */
 }
 .sidebar-header {
     padding: 1rem 0.5rem; /* Adjusted padding */
@@ -99,12 +101,15 @@ body {
 }
 
 /* --- Main Content Area --- */
+/* This section styles the right-hand side content */
 .main-content {
     padding: 2rem 2.5rem; /* Increased padding */
     overflow-y: auto;
-    /* Account for fixed sidebar */
-    margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width)); /* Calculate width */
+    /* No margin-left needed when using grid */
+    /* margin-left: var(--sidebar-width); */
+    /* No width calculation needed when using grid */
+    /* width: calc(100% - var(--sidebar-width)); */
+    background-color: #077A7D !important; /* Ensure background color */
 }
 .header {
     display: flex;
@@ -120,7 +125,7 @@ body {
     font-size: 1.6em; /* Slightly larger */
     font-weight: 600;
     min-width: 0;
-    color: var(--text-dark);
+    color: #ffffff;
 }
 
 /* --- Buttons (Consolidated) --- */
@@ -156,12 +161,15 @@ body {
 .btn-success:hover { background-color: #1f8a38; }
 
 /* Button Sizes */
-.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; } /* Adjusted small button */
 .btn-sm i { margin-right: 5px; font-size: 0.9em; }
-.logout-btn { /* Inherits .btn, adds specific color */
+.logout-btn { /* Specific styles if needed */
     background-color: var(--danger-color);
+    padding: 0.6rem 1.1rem;
+    font-size: 0.9em;
 }
 .logout-btn:hover { background-color: #c82333; }
+.logout-btn i { margin-right: 5px; }
 
 /* --- Cards --- */
 .section-card, .form-card, .stat-card {
@@ -304,22 +312,12 @@ body {
 @media (max-width: 992px) { /* Tablet and smaller */
      .table th:last-child, .table td:last-child { text-align: left; } /* Align actions left */
      .main-content { padding: 1.5rem; }
+     .header { gap: 0.5rem; }
 }
 @media (max-width: 768px) { /* Mobile */
     .dashboard { grid-template-columns: 1fr; } /* Stack layout */
-    .sidebar {
-        position: absolute; /* Or fixed, depending on desired behavior */
-        transform: translateX(-100%); /* Hide off-screen */
-        /* Add styles for a toggle button later if needed */
-        height: 100vh; /* Full height */
-    }
-    /* Add class to body when sidebar is open */
-    /* body.sidebar-open .sidebar { transform: translateX(0); } */
-    .main-content {
-        margin-left: 0; /* Full width */
-        width: 100%;
-        padding: 1rem;
-    }
+    .sidebar { display: none; /* Hide sidebar on mobile - Add JS for toggle later */ }
+    .main-content { margin-left: 0; width: 100%; padding: 1rem; }
     .header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
     .section-card, .form-card { padding: 1.2rem; }
     .section-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
@@ -329,7 +327,6 @@ body {
     .table th, .table td { padding: 0.7rem 0.5rem; font-size: 0.9em; white-space: normal; } /* Allow wrapping */
     .table th:first-child, .table td:first-child { padding-left: 0.5rem; }
     .table th:last-child, .table td:last-child { padding-right: 0.5rem; }
-    .form-actions { flex-direction: column; gap: 0.5rem; }
+    .form-actions { flex-direction: column; gap: 0.8rem; } /* More space for stacked buttons */
     .btn { width: 100%; } /* Stack buttons */
 }
-

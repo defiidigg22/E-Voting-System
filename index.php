@@ -66,17 +66,21 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
                 // Generate PIN and hash password
                 $pin = rand(100000, 999999); // 6-digit PIN
                 $hashed_password = password_hash($password_input, PASSWORD_DEFAULT);
+                $initial_is_active = 0; // MODIFIED: New accounts are inactive by default
 
                 // Prepare INSERT statement
-                $stmt = $conn->prepare("INSERT INTO users (full_name, email, national_id, password, pin) VALUES (?, ?, ?, ?, ?)");
+                // MODIFIED: Added is_active column
+                $stmt = $conn->prepare("INSERT INTO users (full_name, email, national_id, password, pin, is_active) VALUES (?, ?, ?, ?, ?, ?)");
                 if ($stmt === false) {
                     $error = "Database error (prepare failed). Please try again later.";
                      // error_log("Signup Prepare failed: (" . $conn->errno . ") " . $conn->error);
                 } else {
                     // Bind parameters and execute
-                    $stmt->bind_param("sssss", $full_name, $email, $national_id, $hashed_password, $pin);
+                    // MODIFIED: Added $initial_is_active and its type 'i'
+                    $stmt->bind_param("sssssi", $full_name, $email, $national_id, $hashed_password, $pin, $initial_is_active);
                     if ($stmt->execute()) {
-                        $success = "Account created! Your general PIN is: <strong>$pin</strong>. Please save this PIN securely.";
+                        // MODIFIED: Updated success message
+                        $success = "Account created successfully! Your general PIN is: <strong>$pin</strong>. Please save it. Your account is pending administrator approval.";
                         // Clear form fields on success
                         $input_full_name = $input_email = $input_national_id = '';
                     } else {
@@ -104,7 +108,8 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
                 $error = "Email and password are required.";
             } else {
                 // Prepare SELECT statement
-                $stmt = $conn->prepare("SELECT id, full_name, password, pin FROM users WHERE email = ?");
+                // MODIFIED: Added is_active to SELECT
+                $stmt = $conn->prepare("SELECT id, full_name, password, pin, is_active FROM users WHERE email = ?");
                  if ($stmt === false) {
                      $error = "Database error (prepare failed). Please try again later.";
                       // error_log("Login Prepare failed: (" . $conn->errno . ") " . $conn->error);
@@ -116,14 +121,16 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
 
                     if ($result->num_rows === 1) {
                         $user = $result->fetch_assoc();
-                        // Verify password
-                        if (password_verify($password_input, $user['password'])) {
+
+                        // MODIFIED: Check if account is active BEFORE checking password
+                        if ($user['is_active'] != 1) {
+                            $error = "Your account is not active. Please wait for admin approval or contact support.";
+                        } elseif (password_verify($password_input, $user['password'])) {
                             // Login successful: Set session variables
                             $_SESSION['user'] = $user['full_name'];
                             $_SESSION['pin'] = $user['pin'];
                             $_SESSION['voter_id'] = $user['id'];
-                            $stmt->close();
-                            // Redirect to dashboard
+                            // $stmt->close(); // Close statement after use, moved below
                             header("Location: dashboard.php");
                             exit();
                         } else {
@@ -134,12 +141,11 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
                         // Email not found
                         $error = "Invalid email or password.";
                     }
-                    $stmt->close();
+                    $stmt->close(); // Close statement here
                 }
             }
-        }
-    } // End if captcha verified
-
+        } // End if captcha verified
+    }
 } elseif ($conn->connect_error) {
      // Handle connection error that occurred before POST check
      $error = "Database connection error. Please try again later.";
@@ -152,228 +158,128 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Voting System - <?php echo $is_signup ? 'Signup' : 'Login'; ?></title>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        /* Base styles */
-        html, body {
-            height: 100%;
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-        }
         body {
-            background: url('https://media.istockphoto.com/id/1201072992/photo/voting.jpg?s=2048x2048&w=is&k=20&c=1fjvMK92St7l854bMAg1IziRGGncQ3LGiCteJ-MLNMM=') no-repeat center center fixed; /* Fixed background */
-            background-size: cover;
-            color: #fff;
-            /* --- Centering Fix --- */
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #f0abfc 100%);
+            /* Soft purple/blue gradient */
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 20px; /* Add padding for smaller screens */
-            box-sizing: border-box;
+            justify-content: center;
         }
-        .container {
-            background: rgba(0, 0, 0, 0.65); /* Darker semi-transparent background */
-            padding: 35px 40px; /* Increased padding */
-            border-radius: 15px;
-            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            width: 100%;
-            max-width: 450px; /* Max width */
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-sizing: border-box;
+        #tsparticles { display: none; } /* Hide particles for a cleaner look */
+        .card {
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 8px 32px 0 rgba(80, 80, 180, 0.18);
+            border-radius: 1.5rem;
+            border: none;
+            padding: 2.5rem 2rem;
+            margin: 2rem auto;
+            max-width: 420px;
         }
-        h2 {
-            color: #ffffff;
-            margin-top: 0; /* Remove default top margin */
-            margin-bottom: 25px; /* Increased bottom margin */
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
-            font-size: 1.8em; /* Slightly larger heading */
+        .form-control, .btn {
+            transition: box-shadow 0.3s, border-color 0.3s, background 0.3s, color 0.3s;
         }
-
-        /* --- Message Styling (Moved Above Form) --- */
-        .message-area {
-            margin-bottom: 20px; /* Space between messages and form */
-            min-height: 45px; /* Reserve space even when no message */
-            text-align: center;
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem #a78bfa80, 0 2px 8px #a78bfa33;
         }
-        .message {
-            font-size: 0.95em; /* Slightly larger message font */
-            padding: 12px 15px;
-            border-radius: 8px; /* Match input radius */
-            border: 1px solid transparent;
-            display: block; /* Ensure it takes full width */
-            box-sizing: border-box;
-            word-wrap: break-word;
+        .btn-primary {
+            background: linear-gradient(90deg, #a78bfa, #6366f1);
+            border: none;
         }
-        .message.error {
-            color: #ffdddd;
-            background-color: rgba(255, 68, 68, 0.4); /* Slightly stronger red */
-            border-color: rgba(255, 68, 68, 0.6);
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #6366f1, #a78bfa);
         }
-        .message.success {
-            color: #ddffdd;
-            background-color: rgba(76, 175, 80, 0.4); /* Slightly stronger green */
-            border-color: rgba(76, 175, 80, 0.6);
-        }
-        .message.success strong { /* Style bold PIN */
-            color: #fff;
-            font-weight: bold;
-        }
-
-        /* Form Group Styling */
-        .form-group {
-            margin-bottom: 18px; /* Consistent spacing */
-            position: relative; /* Needed for password toggle icon */
-            text-align: left; /* Align labels left */
-        }
-        .form-group label { /* Optional: Add labels if desired */
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        input {
-            width: 100%;
-            padding: 14px; /* Slightly larger padding */
-            /* --- Input Field Distinction --- */
-            background: rgba(255, 255, 255, 0.15); /* Slightly less transparent */
-            border: 1px solid rgba(255, 255, 255, 0.4); /* Slightly stronger border */
-            border-radius: 8px; /* More rounded corners */
-            color: #fff;
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-        input:focus {
-            outline: none;
-            border-color: #00bcd4; /* Highlight focus */
-            background: rgba(255, 255, 255, 0.25);
-        }
-        /* Specific padding for password input when icon is present */
-        .password-input-wrapper input {
-             padding-right: 45px; /* Make space for the icon */
-        }
-
-        /* Password Toggle Icon */
         .password-toggle-icon {
             position: absolute;
-            right: 15px;
-            /* Adjust top based on whether you have labels */
-            top: 50%; /* If no labels */
-            /* top: calc(50% + 12px); */ /* Approximate if using labels */
+            right: 1rem;
+            top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1.1em;
-            z-index: 2; /* Ensure icon is clickable */
-        }
-         .password-toggle-icon:hover {
-             color: #fff;
-         }
-
-        /* Style for reCAPTCHA */
-        .g-recaptcha {
-            display: flex; /* Use flex to center */
-            justify-content: center; /* Center horizontally */
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-
-        /* Button Styling */
-        button {
-            width: 100%;
-            padding: 14px;
-            background-color: #00bcd4;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 17px; /* Slightly larger font */
-            transition: background-color 0.3s, box-shadow 0.3s;
-            font-weight: bold;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-            margin-top: 15px; /* Space above button */
-        }
-        button:hover {
-            background-color: #0097a7;
-            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Link Styling */
-        .switch-link {
-            margin-top: 25px; /* More space before links */
-            font-size: 0.95em;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            color: #6366f1;
         }
         .switch-link a {
-            color: #00bcd4;
-            text-decoration: none;
-            font-weight: bold;
+            color: #7c3aed;
+            font-weight: 500;
         }
         .switch-link a:hover {
             text-decoration: underline;
         }
+        .logo-animate {
+            opacity: 0;
+            transform: scale(0.8) rotate(-10deg);
+            animation: logoFadeIn 1.2s cubic-bezier(0.23, 1, 0.32, 1) 0.5s forwards;
+        }
+        @keyframes logoFadeIn {
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2><?php echo $is_signup ? 'Create Your Account' : 'E-Voting System Login'; ?></h2>
-
-        <div class="message-area">
-            <?php if ($error): ?>
-                <div class="message error"><?php echo htmlspecialchars($error); ?></div>
-            <?php elseif ($success): ?>
-                 <div class="message success"><?php echo $success; // Contains HTML (<strong>), so don't escape ?></div>
-            <?php endif; ?>
-        </div>
-
-        <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]) . ($is_signup ? '?signup=1' : ''); ?>">
-            <?php if ($is_signup): ?>
-                <div class="form-group">
-                     <input type="text" id="full_name" name="full_name" placeholder="Enter your full name" required value="<?php echo htmlspecialchars($input_full_name); ?>">
+    <div id="tsparticles"></div>
+    <div class="container d-flex align-items-center justify-content-center min-vh-100">
+        <div class="col-12 col-md-8 col-lg-5 mx-auto">
+            <div class="card animate__animated animate__fadeInDown" id="tilt-card">
+                <div class="text-center mb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="E-Voting Logo" width="64" class="mb-2 logo-animate">
+                    <h2 class="fw-bold mb-0 text-dark"><?php echo $is_signup ? 'Create Your Account' : 'E-Voting System Login'; ?></h2>
                 </div>
-                <div class="form-group">
-                     <input type="email" id="email" name="email" placeholder="Enter your email" required value="<?php echo htmlspecialchars($input_email); ?>">
+                <?php if ($error): ?>
+                    <div class="alert alert-danger text-center animate__animated animate__shakeX"><?php echo htmlspecialchars($error); ?></div>
+                <?php elseif ($success): ?>
+                    <div class="alert alert-success text-center animate__animated animate__fadeInUp"><?php echo $success; // Contains HTML (<strong>), so don't escape ?></div>
+                <?php endif; ?>
+                <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]) . ($is_signup ? '?signup=1' : ''); ?>">
+                    <?php if ($is_signup): ?>
+                        <div class="mb-3 animate__animated animate__fadeInLeft animate__delay-1s">
+                            <input type="text" id="full_name" name="full_name" class="form-control form-control-lg" placeholder="Enter your full name" required value="<?php echo htmlspecialchars($input_full_name); ?>">
+                        </div>
+                        <div class="mb-3 animate__animated animate__fadeInLeft animate__delay-2s">
+                            <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="Enter your email" required value="<?php echo htmlspecialchars($input_email); ?>">
+                        </div>
+                        <div class="mb-3 animate__animated animate__fadeInLeft animate__delay-3s">
+                            <input type="text" id="national_id" name="national_id" class="form-control form-control-lg" placeholder="Enter your National ID / Unique ID" required value="<?php echo htmlspecialchars($input_national_id); ?>">
+                        </div>
+                    <?php else: // Login form ?>
+                        <div class="mb-3 animate__animated animate__fadeInLeft animate__delay-1s">
+                            <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="Enter your email" required value="<?php echo htmlspecialchars($input_email); ?>">
+                        </div>
+                    <?php endif; ?>
+                    <div class="mb-3 position-relative animate__animated animate__fadeInLeft animate__delay-2s">
+                        <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Enter your password" required>
+                        <i class="fas fa-eye password-toggle-icon" onclick="togglePasswordVisibility('password')"></i>
+                    </div>
+                    <div class="g-recaptcha mb-3 animate__animated animate__fadeIn animate__delay-3s" data-sitekey="<?php echo defined('RECAPTCHA_SITE_KEY') ? RECAPTCHA_SITE_KEY : 'YOUR_SITE_KEY'; ?>"></div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-2 animate__animated animate__pulse animate__delay-4s btn-ripple"><span><?php echo $is_signup ? 'Sign Up' : 'Login'; ?></span></button>
+                </form>
+                <div class="switch-link text-center mt-3 animate__animated animate__fadeInUp animate__delay-5s">
+                    <?php if ($is_signup): ?>
+                        Already have an account? <a href="index.php">Login Here</a>
+                    <?php else: ?>
+                        Don't have an account? <a href="index.php?signup=1">Sign Up Here</a>
+                        <br> <a href="forgot_password.php" class="d-inline-block mt-2">Forgot Password?</a>
+                    <?php endif; ?>
                 </div>
-                <div class="form-group">
-                     <input type="text" id="national_id" name="national_id" placeholder="Enter your National ID / Unique ID" required value="<?php echo htmlspecialchars($input_national_id); ?>">
-                </div>
-            <?php else: // Login form ?>
-                 <div class="form-group">
-                     <input type="email" id="email" name="email" placeholder="Enter your email" required value="<?php echo htmlspecialchars($input_email); ?>">
-                 </div>
-            <?php endif; ?>
-
-            <div class="form-group password-input-wrapper">
-                 <input type="password" id="password" name="password" class="password-input" placeholder="Enter your password" required>
-                <i class="fas fa-eye password-toggle-icon" onclick="togglePasswordVisibility('password')"></i>
             </div>
-
-            <div class="g-recaptcha" data-sitekey="<?php echo defined('RECAPTCHA_SITE_KEY') ? RECAPTCHA_SITE_KEY : 'YOUR_SITE_KEY'; // Use constant or default ?>"></div>
-
-            <button type="submit"><?php echo $is_signup ? 'Sign Up' : 'Login'; ?></button>
-        </form>
-
-        <p class="switch-link">
-            <?php if ($is_signup): ?>
-                Already have an account? <a href="index.php">Login Here</a>
-            <?php else: ?>
-                Don't have an account? <a href="index.php?signup=1">Sign Up Here</a>
-            <?php endif; ?>
-        </p>
+        </div>
     </div>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         function togglePasswordVisibility(inputId) {
             const passwordInput = document.getElementById(inputId);
-            const icon = passwordInput.nextElementSibling; // Get the icon next to the input
-
+            const icon = passwordInput.nextElementSibling;
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
                 icon.classList.remove("fa-eye");
@@ -384,6 +290,41 @@ if (!$conn->connect_error && $_SERVER["REQUEST_METHOD"] == "POST") {
                 icon.classList.add("fa-eye");
             }
         }
+        // Parallax tilt effect
+        VanillaTilt.init(document.querySelectorAll("#tilt-card"), {
+            max: 18,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.18
+        });
+        // tsParticles animated background
+        tsParticles.load("tsparticles", {
+            background: { color: { value: "#0000" } },
+            fpsLimit: 60,
+            particles: {
+                number: { value: 60, density: { enable: true, area: 800 } },
+                color: { value: ["#0d6efd", "#6f42c1", "#20c997", "#ffc107"] },
+                shape: { type: "circle" },
+                opacity: { value: 0.5 },
+                size: { value: { min: 2, max: 5 } },
+                move: { enable: true, speed: 1.2, direction: "none", outModes: { default: "out" } },
+                links: { enable: true, distance: 120, color: "#0d6efd", opacity: 0.2, width: 1 }
+            },
+            detectRetina: true
+        });
+        // Ripple effect on button
+        document.querySelectorAll('.btn-ripple').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const circle = document.createElement('span');
+                circle.classList.add('ripple');
+                const rect = btn.getBoundingClientRect();
+                circle.style.width = circle.style.height = Math.max(rect.width, rect.height) + 'px';
+                circle.style.left = (e.clientX - rect.left - rect.width/2) + 'px';
+                circle.style.top = (e.clientY - rect.top - rect.height/2) + 'px';
+                btn.appendChild(circle);
+                setTimeout(() => circle.remove(), 600);
+            });
+        });
     </script>
 </body>
 </html>

@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL); // You already have this, which is good
+ini_set('display_errors', 1); // And this
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);

@@ -100,84 +100,236 @@ $candidates = $candidates_stmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Election - <?php echo htmlspecialchars($election['title']); ?></title>
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+        }
+        .sidebar {
+            min-width: 240px;
+            max-width: 240px;
+            background: linear-gradient(160deg, #6366f1 0%, #60a5fa 100%);
+            color: #fff;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: all 0.3s;
+            z-index: 1030;
+        }
+        .sidebar.collapsed {
+            margin-left: -240px;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-header p {
+            font-size: 1rem;
+            color: #dbeafe;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            margin: 0.5rem 0;
+        }
+        .sidebar-menu a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 0.75rem 2rem;
+            border-left: 4px solid transparent;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .sidebar-menu a.active, .sidebar-menu a:hover {
+            background: rgba(255,255,255,0.08);
+            border-left: 4px solid #fff;
+        }
+        .main-content {
+            margin-left: 240px;
+            padding: 2rem 2vw 2rem 2vw;
+            transition: margin-left 0.3s;
+        }
+        .main-content.full {
+            margin-left: 0;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: #6366f1;
+            font-size: 2rem;
+            margin-right: 1rem;
+            display: inline-block;
+        }
+        .form-card {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 2px 16px 0 rgba(99,102,241,0.08);
+            padding: 2rem 2rem 1.5rem 2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .form-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #6366f1;
+        }
+        .form-header .sub-title {
+            color: #64748b;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #334155;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            border-radius: 0.5rem;
+        }
+        .form-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .btn {
+            border-radius: 0.5rem;
+        }
+        .alert {
+            max-width: 700px;
+            margin: 0 auto 1.5rem auto;
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .tab {
+            background: #f1f5f9;
+            color: #6366f1;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            cursor: pointer;
+            font-weight: 500;
+            border: 1px solid #e0e7ff;
+            border-bottom: none;
+        }
+        .tab.active {
+            background: #fff;
+            color: #1e293b;
+            border-bottom: 2px solid #fff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar {
+                position: fixed;
+                z-index: 1040;
+            }
+        }
+    </style>
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            document.querySelector('.main-content').classList.toggle('full');
+        }
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelector('.tab[onclick="showTab(\'' + tab + '\')"]').classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        }
+    </script>
 </head>
 <body>
-    <div class="dashboard">
-        <div class="sidebar">
-             <div class="sidebar-header"><h2>E-Voting System</h2><p>Admin Panel</p></div>
-             <ul class="sidebar-menu">
-                <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a></li>
-                <li><a href="manage_elections.php" class="active"><i class="fas fa-box-archive fa-fw"></i>Manage Elections</a></li>
-                <li><a href="manage_candidates.php"><i class="fas fa-users fa-fw"></i>Manage Candidates</a></li>
-                <li><a href="manage_voters.php"><i class="fas fa-user-check fa-fw"></i>Manage Voters</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-pie fa-fw"></i>Reports</a></li>
-                <?php if ($is_superadmin): ?>
-                    <li><a href="manage_admins.php"><i class="fas fa-user-shield fa-fw"></i>Manage Admins</a></li>
-                <?php endif; ?>
-                <li><a href="settings.php"><i class="fas fa-cog fa-fw"></i>Settings</a></li>
-                <li><a href="logout.php"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
-            </ul>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>E-Voting System</h2>
+            <p>Admin Panel</p>
         </div>
-
-        <div class="main-content">
-            <div class="header">
-                <div class="welcome-message">
-                    Edit Election: <?php echo htmlspecialchars($election['title']); ?>
-                </div>
-                <button class="logout-btn" onclick="location.href='logout.php'"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            </div>
-
-             <?php if (isset($_SESSION['success_message'])): ?>
-                <div class="alert alert-success">
-                    <?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
-                </div>
+        <ul class="sidebar-menu">
+            <li><a href="admin_dashboard.php"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a></li>
+            <li><a href="manage_elections.php" class="active"><i class="fas fa-box-archive fa-fw"></i>Manage Elections</a></li>
+            <li><a href="manage_candidates.php"><i class="fas fa-users fa-fw"></i>Manage Candidates</a></li>
+            <li><a href="manage_voters.php"><i class="fas fa-user-check fa-fw"></i>Manage Voters</a></li>
+            <li><a href="reports.php"><i class="fas fa-chart-pie fa-fw"></i>Reports</a></li>
+            <?php if ($is_superadmin): ?>
+                <li><a href="manage_admins.php"><i class="fas fa-user-shield fa-fw"></i>Manage Admins</a></li>
             <?php endif; ?>
-             <?php if (!empty($errors)): ?>
-                <div class="alert alert-danger">
-                    <strong>Please fix the following errors:</strong>
-                    <ul>
-                        <?php foreach ($errors as $error): ?>
-                            <li><?php echo htmlspecialchars($error); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
-            <div class="tabs">
-                <div class="tab active" onclick="showTab('details')"><i class="fas fa-info-circle"></i> Details</div>
-                <div class="tab" onclick="showTab('candidates')"><i class="fas fa-users"></i> Candidates</div>
-                <div class="tab" onclick="showTab('results')"><i class="fas fa-poll"></i> Results</div>
+            <li><a href="settings.php"><i class="fas fa-cog fa-fw"></i>Settings</a></li>
+            <li><a href="logout.php"><i class="fas fa-sign-out-alt fa-fw"></i>Logout</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="header">
+            <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <div class="welcome-message">Edit Election: <?php echo htmlspecialchars($election['title']); ?></div>
+            <button class="btn btn-outline-danger btn-sm" onclick="location.href='logout.php'"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success">
+                <?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
             </div>
-
-            <div id="details" class="tab-content active">
-                <div class="form-card"> <form method="POST" action="edit_election.php?id=<?php echo $election_id; ?>">
-                        <div class="form-group">
-                            <label for="title">Election Title</label>
-                            <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($election['title']); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea id="description" name="description"><?php echo htmlspecialchars($election['description']); ?></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="start_datetime">Start Date & Time</label>
-                            <input type="datetime-local" id="start_datetime" name="start_datetime"
-                                   value="<?php echo date('Y-m-d\TH:i', strtotime($election['start_datetime'])); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="end_datetime">End Date & Time</label>
-                            <input type="datetime-local" id="end_datetime" name="end_datetime"
-                                   value="<?php echo date('Y-m-d\TH:i', strtotime($election['end_datetime'])); ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="status">Status</label>
-                            <select id="status" name="status" required>
+        <?php endif; ?>
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <strong>Please fix the following errors:</strong>
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?php echo htmlspecialchars($error); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('details')"><i class="fas fa-info-circle"></i> Details</div>
+            <div class="tab" onclick="showTab('candidates')"><i class="fas fa-users"></i> Candidates</div>
+            <div class="tab" onclick="showTab('results')"><i class="fas fa-poll"></i> Results</div>
+        </div>
+        <div id="details" class="tab-content active">
+            <div class="form-card">
+                <form method="POST" action="edit_election.php?id=<?php echo $election_id; ?>">
+                    <div class="form-group mb-3">
+                        <label for="title">Election Title</label>
+                        <input type="text" class="form-control" id="title" name="title" value="<?php echo htmlspecialchars($election['title']); ?>" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description"><?php echo htmlspecialchars($election['description']); ?></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="start_datetime">Start Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" value="<?php echo date('Y-m-d\TH:i', strtotime($election['start_datetime'])); ?>" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="end_datetime">End Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime" value="<?php echo date('Y-m-d\TH:i', strtotime($election['end_datetime'])); ?>" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="status">Status</label>
+                        <select class="form-select" id="status" name="status" required>
                                 <option value="draft" <?php echo $election['status'] === 'draft' ? 'selected' : ''; ?>>Draft</option>
                                 <option value="active" <?php echo $election['status'] === 'active' ? 'selected' : ''; ?>>Active</option>
                                 <option value="completed" <?php echo $election['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
